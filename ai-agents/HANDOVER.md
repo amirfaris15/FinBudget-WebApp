@@ -1,5 +1,5 @@
 # Project Handover: Personal Finance App (SpendingApp)
-
+gh
 ## What this is
 
 A personal finance PWA + native iOS app for Damian, a full stack developer (React, Python, FastAPI) based in KL. The goal is a **one-for-all personal finance OS** with automatic transaction ingestion from Malaysian banking app notifications.
