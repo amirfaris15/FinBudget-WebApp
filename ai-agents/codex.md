@@ -54,8 +54,19 @@ Multi‑agent pipeline with **handoff files** as the communication layer.
 - Each agent needs its **own** codex.md.
 - Communication happens only via handoff files. Be concise and summarized in detail for the next agent to understand clearly.
 
+## Handoff Protocol
+See **docs/handoff-protocol.md** for complete specification and templates.
+
+**Quick Reference:**
+- `handoffs/be-summary.md` → API endpoints, DB schema, assumptions, files created
+- `handoffs/fe-summary.md` → components built, integration points, state patterns, dependencies
+- `handoffs/qa-report.md` → test results (summary | coverage | failures), sign-off status
+
+Each handoff must follow the mandatory section structure defined in docs/handoff-protocol.md.
+
 ## Next Immediate Steps
 1. Write docs/requirements.md (feature requirements, user stories, acceptance criteria)
 2. Write codex.md (global) + per-agent codex.md
 3. Define API contract before coding
 4. Scaffold monorepo structure
+5. Review docs/handoff-protocol.md to align on agent communication contract
