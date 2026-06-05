@@ -29,12 +29,12 @@ The killer feature is parsing Malaysian banking notifications (Maybank, Touch 'n
 **Feature:** Automatic transaction capture from banking app notifications
 
 **User Story:**  
-> As Damian, when I receive a Maybank notification like "Payment received: RM500 from SALARY_EMPLOYER", I want the iOS Shortcut to post this to the app backend, which parses it with Claude, extracts merchant/amount/category, and saves it—all automatically—so I never manually enter transactions.
+> As Damian, when I receive a Maybank notification like "Payment received: RM500 from SALARY_EMPLOYER", I want the iOS Shortcut to post this to the app backend, which parses it with Codex, extracts merchant/amount/category, and saves it—all automatically—so I never manually enter transactions.
 
 **Requirements:**
 - iOS Shortcut listener accepts raw notification text via POST to `/api/transactions/ingest`
-- Backend sends text to Claude API with prompt: extract merchant, amount (MYR), category
-- Claude returns structured JSON: `{ merchant, amount, category, confidence }`
+- Backend sends text to Backend API with prompt: extract merchant, amount (MYR), category
+- Backend returns structured JSON: `{ merchant, amount, category, confidence }`
 - If confidence < 80%, show "uncategorized" category in UI
 - Duplicate detection: store `raw_notification_text` hash, skip if exists
 - Category enum (fixed, server-side): food, transport, entertainment, utilities, salary, transfer, shopping, other
@@ -42,15 +42,15 @@ The killer feature is parsing Malaysian banking notifications (Maybank, Touch 'n
 
 **Acceptance Criteria:**
 - ✅ Shortcut sends notification text to `/api/transactions/ingest`
-- ✅ Claude parses text and returns merchant, amount, category
+- ✅ Codex parses text and returns merchant, amount, category
 - ✅ Transaction saved to database with created_at timestamp
 - ✅ UI reflects new transaction within 2 seconds
 - ✅ Duplicate notifications ignored
 - ✅ User can edit category, changes persist
-- ✅ Handles Claude API rate limits gracefully (show error toast)
+- ✅ Handles Codex API rate limits gracefully (show error toast)
 
 **Notes:**
-- Claude parsing may take 2-5 seconds; show loading indicator
+- Codex parsing may take 2-5 seconds; show loading indicator
 - Shortcut should not be manually entered by user (iOS Automation app)
 - Support both MYR and GBP amounts (future: multi-currency)
 
@@ -158,6 +158,8 @@ The killer feature is parsing Malaysian banking notifications (Maybank, Touch 'n
 - ✅ Alert text is clear and actionable
 - ✅ No duplicate alerts for same category in same minute
 
+**Priority:** Low (ship after MVP)
+
 ---
 
 ## 3. Secondary Features
@@ -188,7 +190,7 @@ The killer feature is parsing Malaysian banking notifications (Maybank, Touch 'n
 - ✅ Recurring charge detection works for common subscriptions
 - ✅ Estimated annual recurring cost displayed on dashboard
 
-**Priority:** Medium (ship after MVP)
+**Priority:** Low (ship after MVP)
 
 ---
 
@@ -246,7 +248,7 @@ The killer feature is parsing Malaysian banking notifications (Maybank, Touch 'n
 - ✅ Monthly trend chart renders
 - ✅ User can edit past entries
 
-**Priority:** Medium
+**Priority:** Low (ship after MVP)
 
 ---
 
@@ -396,7 +398,7 @@ The killer feature is parsing Malaysian banking notifications (Maybank, Touch 'n
 | **API Response Time** | < 500ms for GET endpoints |
 | **Transaction Ingestion** | < 5s (Claude parsing + DB save) |
 | **Dashboard Load** | < 2s |
-| **Database** | SQLite (dev), Postgres (prod) |
+| **Database** | SQLite (dev and prod) |
 | **Uptime** | 99% (single-region backend okay for now) |
 | **Data Retention** | Indefinite (user can delete) |
 | **Concurrent Users** | 1 (single-user app for now) |
@@ -411,7 +413,7 @@ The killer feature is parsing Malaysian banking notifications (Maybank, Touch 'n
 |----------|--------|
 | **PWA not native app** | No Apple Developer account ($99/year) |
 | **iOS Shortcuts (not Wallet API)** | Apple restricts Wallet API for this use case |
-| **Claude API (not local LLM)** | Cost-effective, accurate parsing for Malaysian banking language |
+| **Codex API (not local LLM)** | Cost-effective, accurate parsing for Malaysian banking language |
 | **Single-user app** | Built for Damian, can add multi-user later |
 | **MYR primary (GBP later)** | Damian in KL now, moves to UK in Sept 2026 |
 | **Manual net worth entry** | No banking API integration (complex auth) |
