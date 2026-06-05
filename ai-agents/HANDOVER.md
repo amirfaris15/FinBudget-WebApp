@@ -1,172 +1,104 @@
-# Project Handover: Personal Finance App (SpendingApp)
-gh
-## What this is
+# Project Handover: FinBudget
 
-A personal finance PWA + native iOS app for Damian, a full stack developer (React, Python, FastAPI) based in KL. The goal is a **one-for-all personal finance OS** with automatic transaction ingestion from Malaysian banking app notifications.
+## What This Is
 
------
+FinBudget is a personal finance PWA for Damian, a full-stack developer based in Kuala Lumpur. The goal is a one-for-all personal finance OS with automatic transaction ingestion from Malaysian banking app notifications.
 
 ## Core Concept
 
-**Transaction ingestion pipeline:**
+Transaction ingestion pipeline:
 
-1. iOS Shortcut triggers on banking app notification (e.g. Maybank, Touch ’n Go)
-1. Shortcut POSTs raw notification text to a FastAPI backend
-1. Backend uses an LLM to parse merchant, amount, category
-1. Data saved to DB and reflected in the app UI
+1. iOS Shortcut triggers on a banking app notification, such as Maybank or Touch 'n Go.
+2. Shortcut posts raw notification text to the FastAPI backend.
+3. Backend uses OpenAI API to parse merchant, amount, currency, category, confidence, date, and flow.
+4. Backend stores the transaction in Supabase Postgres.
+5. Frontend reflects the transaction in dashboard, transaction log, and budget summaries.
 
-This is the killer feature — automatic categorisation without manual entry.
-
------
+Automatic categorisation is the core differentiator.
 
 ## Decided Stack
 
-|Layer        |Choice                                          |
-|-------------|------------------------------------------------|
-|Frontend     |React (PWA, hosted on Vercel)                   |
-|Backend      |Python / FastAPI                                |
-|Database     |SQLite (dev) → Postgres (prod)                  |
-|LLM          |Claude API (transaction parsing, categorisation)|
-|Hosting      |Vercel (FE), Railway or Render (BE)             |
-|Notifications|Web Push API                                    |
-|iOS ingestion|iOS Shortcuts → POST to backend                 |
+| Layer | Choice |
+|-------|--------|
+| Frontend | React PWA, hosted on Vercel |
+| Backend | Python / FastAPI |
+| Database | Supabase Postgres |
+| LLM | OpenAI API for transaction parsing and categorisation |
+| Hosting | Vercel for frontend, Railway or Render for backend |
+| Notifications | Web Push API |
+| iOS ingestion | iOS Shortcuts POST to backend |
 
------
+## Core Feature List
 
-## Feature List
-
-### Core
-
-- Transaction log (auto-ingested via Shortcut + manual fallback)
-- LLM-based auto-categorisation (editable)
+- Transaction log with auto-ingested and manual transactions
+- LLM-based categorisation with user edits
+- Low-confidence parsing via `categorization_status = "needs_review"`
 - Monthly budget limits per category
-- Alerts when approaching budget limit
-- Dashboard — spend so far, remaining budget, top categories
+- Budget alerts at approaching and exceeded thresholds
+- Dashboard with spend so far, remaining budget, and top categories
 
-### Budgeting
+## Agentic Workflow
 
-- Set monthly budgets per category (food, transport, entertainment etc)
-- Rollover vs reset logic
-- “Safe to spend” number (after bills and savings targets)
-- Pay cycle awareness (reset on payday, not 1st of month)
+The `ai-agents` folder is a multi-agent planning and handoff package.
 
-### Insights
+Agents:
 
-- Spending trends month over month
-- Merchant breakdown
-- Unusual spend detection
-- Subscription/recurring charge auto-detection
+- Backend agent builds API and writes `handoffs/be-summary.md`
+- Frontend agent reads backend handoff, builds UI, and writes `handoffs/fe-summary.md`
+- QA agent reads both handoffs, runs tests, and writes `handoffs/qa-report.md`
 
-### Goals
+Subagents do not share chat history. Communication happens through docs and handoff files.
 
-- Savings goals with progress bars
-- Auto-allocate % of income toward goals
+## Agent Files
 
-### Net Worth
-
-- Manual input: assets (savings, ASB, EPF Akaun Fleksibel, investments)
-- Liabilities (car loan etc)
-- Net worth number updated monthly
-
-### Nice to Haves
-
-- Multi-currency support (useful when Damian moves to UK for MSc)
-- CSV export
-- Weekly spending digest notification
-
------
-
-## Build Approach: Multi-Agent Pipeline (Learning Goal)
-
-Damian wants to use this project to **learn agentic AI coding**, not just ship the app. He’s coming from GitHub Copilot with manual prompting and wants to level up to a proper multi-agent Claude Code setup.
-
-### Agent Structure
-
-```
-/CLAUDE.md                  ← global: stack, conventions, project overview
-/frontend/CLAUDE.md         ← React structure, component patterns, Tailwind rules
-/backend/CLAUDE.md          ← API design, DB schema, auth patterns
-/qa/CLAUDE.md               ← testing conventions, tools, coverage expectations
+```text
+ai-agents/
+  AGENTS.md
+  docs/
+    requirements.md
+    api-contract.md
+    handoff-protocol.md
+  backend/
+    AGENTS.md
+    schema.sql
+    .env.example
+    migrations/
+      001_initial_schema.sql
+  frontend/
+    AGENTS.md
+  qa/
+    AGENTS.md
+  handoffs/
+    be-summary.md
+    fe-summary.md
+    qa-report.md
 ```
 
-### Pipeline Flow
+## Current Build Order
 
-```
-You (one prompt)
-      │
-      ▼
-Orchestrator agent
-      │
-      ├──► Backend agent   → writes code + /handoffs/be-summary.md
-      ├──► Frontend agent  → reads be-summary, writes code + /handoffs/fe-summary.md
-      └──► QA agent        → reads both, runs tests, writes /handoffs/qa-report.md
-                                        │
-                           If failures → routes back to BE or FE agent to fix
-                                        │
-                           QA re-runs until clean
-```
+1. Backend agent reads `docs/requirements.md`, `docs/api-contract.md`, `backend/schema.sql`, and `backend/AGENTS.md`.
+2. Backend agent implements FastAPI, Supabase Postgres models/migrations, auth, ingestion, transactions, budgets, dashboard summary, and handoff.
+3. Frontend agent reads `docs/api-contract.md`, `handoffs/be-summary.md`, and `frontend/AGENTS.md`.
+4. Frontend agent implements React PWA views and handoff.
+5. QA agent reads requirements, API contract, both handoffs, and `qa/AGENTS.md`.
+6. QA agent runs or defines tests and reports blockers.
 
-### Handoff Files Convention
+## Important Decisions
 
-Each agent writes a summary after completing its task:
-
-- `/handoffs/be-summary.md` — what was built, API contracts, assumptions
-- `/handoffs/fe-summary.md` — what was built, component structure, assumptions
-- `/handoffs/qa-report.md` — test results, failures, what needs fixing
-
------
-
-## What Needs to Be Done Next
-
-### Immediate next steps:
-
-1. **Write `/docs/requirements.md`** — full feature requirements, user stories, acceptance criteria
-1. **Write `/CLAUDE.md`** — global project context for all agents
-1. **Write per-agent CLAUDE.md files** — frontend, backend, QA
-1. **Define API contract** — list of endpoints, request/response shapes, before any agent starts coding
-1. **Set up folder structure** — scaffold the monorepo before firing up agents
-
-### Suggested folder structure:
-
-```
-/
-├── CLAUDE.md
-├── docs/
-│   ├── requirements.md
-│   └── api-contract.md
-├── handoffs/
-│   ├── be-summary.md
-│   ├── fe-summary.md
-│   └── qa-report.md
-├── frontend/
-│   ├── CLAUDE.md
-│   └── (React app)
-├── backend/
-│   ├── CLAUDE.md
-│   └── (FastAPI app)
-└── qa/
-    ├── CLAUDE.md
-    └── (tests)
-```
-
------
+- PWA over native app.
+- iOS Shortcuts for notification ingestion.
+- Shortcut ingestion uses `X-Ingestion-Token`, not a user JWT.
+- Frontend-authenticated routes use JWT bearer auth.
+- Supabase is used as hosted Postgres; business logic remains in FastAPI.
+- Money is stored and returned as integer minor units.
+- The category enum does not include `uncategorized`; low-confidence items use `categorization_status`.
 
 ## Context About Damian
 
-- Full stack dev at EY Malaysia (React, Python, Azure)
-- Comfortable with React, FastAPI, API design
-- Starting MSc AI at a UK university in September 2026
-- Malaysian banking apps in use: Maybank, Touch ’n Go
-- Will eventually need multi-currency (MYR + GBP)
-- Prefers clean, direct communication — no fluff
+- Full-stack developer at EY Malaysia.
+- Comfortable with React, Python, FastAPI, and API design.
+- Starting MSc AI in the UK in September 2026.
+- Malaysian banking apps in use: Maybank and Touch 'n Go.
+- Will eventually need MYR and GBP support.
+- Prefers clean, direct communication.
 
------
-
-## Key Decisions Already Made
-
-- ✅ PWA over native app (no $99 Apple Developer account)
-- ✅ iOS Shortcuts for notification ingestion (not Wallet API — Apple restricts that)
-- ✅ Claude API for LLM parsing
-- ✅ Multi-agent pipeline for learning purposes, not because the project requires it
-- ✅ Subagents do NOT share chat history — handoff files are the communication layer
-- ✅ Each agent needs its own CLAUDE.md even in a multi-agent setup

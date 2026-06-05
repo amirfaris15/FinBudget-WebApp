@@ -15,8 +15,8 @@ This auto‑categorisation is the core differentiator.
 ## Stack Decisions
 - Frontend: React (PWA, hosted on Vercel)
 - Backend: Python / FastAPI
-- Database: SQLite (dev) → Postgres (prod)
-- LLM: Claude API (transaction parsing, categorisation)
+- Database: Supabase Postgres
+- LLM: OpenAI API (transaction parsing, categorisation)
 - Hosting: Vercel (FE), Railway or Render (BE)
 - Notifications: Web Push API
 - iOS ingestion: iOS Shortcuts → POST to backend
@@ -44,14 +44,14 @@ Multi‑agent pipeline with **handoff files** as the communication layer.
 ## Folder Expectations
 - docs/requirements.md
 - docs/api-contract.md
-- codex.md (global)
-- frontend/codex.md
-- backend/codex.md
-- qa/codex.md
+- AGENTS.md (global)
+- frontend/AGENTS.md
+- backend/AGENTS.md
+- qa/AGENTS.md
 
 ## Key Constraints
 - Subagents do **not** share chat history.
-- Each agent needs its **own** codex.md.
+- Each agent needs its **own** AGENTS.md.
 - Communication happens only via handoff files. Be concise and summarized in detail for the next agent to understand clearly.
 
 ## Handoff Protocol
@@ -66,7 +66,8 @@ Each handoff must follow the mandatory section structure defined in docs/handoff
 
 ## Next Immediate Steps
 1. Write docs/requirements.md (feature requirements, user stories, acceptance criteria)
-2. Write codex.md (global) + per-agent codex.md
+2. Write AGENTS.md (global) + per-agent AGENTS.md
 3. Define API contract before coding
 4. Scaffold monorepo structure
 5. Review docs/handoff-protocol.md to align on agent communication contract
+

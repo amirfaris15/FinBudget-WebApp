@@ -2,7 +2,7 @@
 
 **Product:** Personal Finance PWA with automatic transaction ingestion from Malaysian banking app notifications  
 **User:** Damian (full-stack developer, KL-based, moving to UK for MSc AI in Sept 2026)  
-**Core Goal:** One-for-all personal finance OS with zero-friction transaction entry via iOS Shortcuts + Claude LLM parsing
+**Core Goal:** One-for-all personal finance OS with zero-friction transaction entry via iOS Shortcuts + OpenAI LLM parsing
 
 ---
 
@@ -11,8 +11,8 @@
 ### 1.1 Architecture
 - **Frontend:** React PWA (mobile-first) hosted on Vercel
 - **Backend:** Python / FastAPI hosted on Railway or Render
-- **Database:** SQLite (dev and prod)
-- **LLM:** Codex API (transaction parsing, categorization, anomaly detection)
+- **Database:** Supabase Postgres
+- **LLM:** OpenAI API (transaction parsing, categorization, anomaly detection)
 - **Ingestion:** iOS Shortcuts → FastAPI POST endpoint
 - **Notifications:** Web Push API (browser)
 
@@ -29,28 +29,28 @@ The killer feature is parsing Malaysian banking notifications (Maybank, Touch 'n
 **Feature:** Automatic transaction capture from banking app notifications
 
 **User Story:**  
-> As Damian, when I receive a Maybank notification like "Payment received: RM500 from SALARY_EMPLOYER", I want the iOS Shortcut to post this to the app backend, which parses it with Codex, extracts merchant/amount/category, and saves it—all automatically—so I never manually enter transactions.
+> As Damian, when I receive a Maybank notification like "Payment received: RM500 from SALARY_EMPLOYER", I want the iOS Shortcut to post this to the app backend, which parses it with OpenAI, extracts merchant/amount/category, and saves it—all automatically—so I never manually enter transactions.
 
 **Requirements:**
 - iOS Shortcut listener accepts raw notification text via POST to `/api/transactions/ingest`
-- Backend sends text to Backend API with prompt: extract merchant, amount (MYR), category
+- Backend sends text to OpenAI API with prompt: extract merchant, amount (MYR), category
 - Backend returns structured JSON: `{ merchant, amount, category, confidence }`
-- If confidence < 80%, show "uncategorized" category in UI
+- If confidence < 80%, set `categorization_status = "needs_review"` and show "Uncategorized" in UI
 - Duplicate detection: store `raw_notification_text` hash, skip if exists
 - Category enum (fixed, server-side): food, transport, entertainment, utilities, salary, transfer, shopping, other
 - User can manually edit category after ingestion (optimistic UI update + backend PUT)
 
 **Acceptance Criteria:**
 - ✅ Shortcut sends notification text to `/api/transactions/ingest`
-- ✅ Codex parses text and returns merchant, amount, category
+- ✅ OpenAI parses text and returns merchant, amount, category
 - ✅ Transaction saved to database with created_at timestamp
 - ✅ UI reflects new transaction within 2 seconds
 - ✅ Duplicate notifications ignored
 - ✅ User can edit category, changes persist
-- ✅ Handles Codex API rate limits gracefully (show error toast)
+- ✅ Handles OpenAI API rate limits gracefully (show error toast)
 
 **Notes:**
-- Codex parsing may take 2-5 seconds; show loading indicator
+- OpenAI parsing may take 2-5 seconds; show loading indicator
 - Shortcut should not be manually entered by user (iOS Automation app)
 - Support both MYR and GBP amounts (future: multi-currency)
 
@@ -272,7 +272,7 @@ The killer feature is parsing Malaysian banking notifications (Maybank, Touch 'n
 
 ### 4.4 Data Import
 - Import transactions from CSV (manual fallback if Shortcut fails)
-- Batch categorization (Claude parses all rows in one call)
+- Batch categorization (OpenAI parses all rows in one call)
 
 ### 4.5 Authentication & Multi-Device
 - User login via email + password (or OAuth later)
@@ -291,7 +291,7 @@ The killer feature is parsing Malaysian banking notifications (Maybank, Touch 'n
 - ✅ Authenticated endpoints protected
 
 **Transaction Endpoints:**
-- ✅ POST /api/transactions/ingest (raw text → Claude → save)
+- ✅ POST /api/transactions/ingest (raw text → OpenAI → save)
 - ✅ GET /api/transactions (paginated, filters: month, category)
 - ✅ PUT /api/transactions/:id (edit category)
 - ✅ DELETE /api/transactions/:id
@@ -303,14 +303,14 @@ The killer feature is parsing Malaysian banking notifications (Maybank, Touch 'n
 - ✅ DELETE /api/budgets/:id
 
 **Database:**
-- ✅ users table (id, email, password_hash, created_at)
-- ✅ transactions table (id, user_id, merchant, amount, category, raw_notification_text, created_at)
-- ✅ budgets table (id, user_id, category, limit_myr, month, created_at)
-- ✅ Indexes on user_id, created_at for fast queries
+- OK users table (id, email, password_hash, created_at)
+- OK transactions table (id, user_id, merchant, amount_minor, currency, category, categorization_status, raw_notification_text, raw_notification_hash, created_at)
+- OK budgets table (id, user_id, category, limit_minor, currency, budget_month, created_at)
+- OK indexes on user_id, created_at for fast queries
 
 **LLM Integration:**
-- ✅ Claude API calls for transaction parsing
-- ✅ Fallback if Claude rate-limited (return error to FE)
+- ✅ OpenAI API calls for transaction parsing
+- ✅ Fallback if OpenAI rate-limited (return error to FE)
 - ✅ Prompt engineering: clear instructions to extract merchant, amount, category
 
 **Error Handling:**
@@ -396,9 +396,9 @@ The killer feature is parsing Malaysian banking notifications (Maybank, Touch 'n
 | Requirement | Target |
 |-------------|--------|
 | **API Response Time** | < 500ms for GET endpoints |
-| **Transaction Ingestion** | < 5s (Claude parsing + DB save) |
+| **Transaction Ingestion** | < 5s (OpenAI parsing + DB save) |
 | **Dashboard Load** | < 2s |
-| **Database** | SQLite (dev and prod) |
+| **Database** | Supabase Postgres |
 | **Uptime** | 99% (single-region backend okay for now) |
 | **Data Retention** | Indefinite (user can delete) |
 | **Concurrent Users** | 1 (single-user app for now) |
@@ -413,7 +413,7 @@ The killer feature is parsing Malaysian banking notifications (Maybank, Touch 'n
 |----------|--------|
 | **PWA not native app** | No Apple Developer account ($99/year) |
 | **iOS Shortcuts (not Wallet API)** | Apple restricts Wallet API for this use case |
-| **Codex API (not local LLM)** | Cost-effective, accurate parsing for Malaysian banking language |
+| **OpenAI API (not local LLM)** | Cost-effective, accurate parsing for Malaysian banking language |
 | **Single-user app** | Built for Damian, can add multi-user later |
 | **MYR primary (GBP later)** | Damian in KL now, moves to UK in Sept 2026 |
 | **Manual net worth entry** | No banking API integration (complex auth) |
@@ -423,7 +423,7 @@ The killer feature is parsing Malaysian banking notifications (Maybank, Touch 'n
 ## 9. Success Metrics
 
 - ✅ **Zero manual transaction entry** — 100% of transactions ingested via Shortcut
-- ✅ **LLM accuracy** — Claude correctly categorizes ≥ 95% of transactions
+- ✅ **LLM accuracy** — OpenAI correctly categorizes ≥ 95% of transactions
 - ✅ **Time to insight** — user can view full spending summary < 2 clicks from home screen
 - ✅ **User adoption** — Damian uses it daily within 1 week of launch
 - ✅ **Learning goal met** — Damian understands multi-agent agentic AI pipeline & can extend it
@@ -438,3 +438,5 @@ The killer feature is parsing Malaysian banking notifications (Maybank, Touch 'n
 - [ ] Investing features (stock portfolio tracking)
 - [ ] Tax reporting & deductions
 - [ ] Mobile app (native iOS/Android)
+
+
